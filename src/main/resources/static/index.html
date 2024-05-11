@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html ng-app="ContactApplication">
+<head>
+    <title>Contact Application</title>
+    <link href='/style.css' rel='stylesheet' type='text/css'/>
+</head>
+<body ng-controller="PersonController">
+
+<!-- Header section for greeting message -->
+<div ng-show="loggedIn">
+    <h2 ng-show="isAdmin">Welcome Admin</h2>
+    <h2 ng-hide="isAdmin">Welcome {{ username }}</h2>
+    <button ng-click="logout()">Logout</button>
+</div>
+
+<!-- User options section -->
+<div ng-show="loggedIn && !isAdmin">
+    <h3>User Options:</h3>
+    <button ng-click="viewAllContacts()">View All Contacts</button>
+    <form ng-submit="viewContactById()">
+        <label>View Contact by ID:</label>
+        <input type="text" ng-model="contactId" required><br>
+        <button type="submit">View Contact</button>
+    </form>
+</div>
+
+<!-- Admin options section -->
+<!-- Admin options section -->
+<div ng-show="loggedIn && isAdmin">
+    <h3>Admin Options:</h3>
+    <button ng-click="viewAllSystemUsers()">View All System Users</button>
+    <button ng-click="viewAllContacts()">View All Contacts</button>
+    <button ng-click="showAddUserForm = true">Add New User</button>
+    <button ng-click="showAddContactForm = true">Add New Contact</button>
+    <button ng-click="showUpdateContactForm = true">Update Existing Contact</button>
+    <button ng-click="showDeleteContactForm = !showDeleteContactForm">Delete Contact</button>
+</div>
+
+
+<!-- Login form -->
+<div ng-hide="loggedIn">
+    <h3>Login</h3>
+    <form ng-submit="login()">
+        <label>Username:</label>
+        <input type="text" ng-model="credentials.username" required><br>
+        <label>Password:</label>
+        <input type="password" ng-model="credentials.password" required><br>
+        <button type="submit">Login</button>
+    </form>
+</div>
+
+<!-- Add new user form -->
+<div ng-show="showAddUserForm">
+    <h3>Add New User:</h3>
+    <form ng-submit="addNewUser()">
+        <label>Username:</label>
+        <input type="text" ng-model="newUser.username" required><br>
+        <label>Password:</label>
+        <input type="password" ng-model="newUser.password" required><br>
+        <button type="submit">Save</button>
+    </form>
+</div>
+
+<!-- Add new contact form -->
+<div ng-show="showAddContactForm">
+    <h3>Add New Contact:</h3>
+    <form ng-submit="addNewContact()">
+        <label>Name:</label>
+        <input type="text" ng-model="newContact.name" required><br>
+        <label>Address:</label>
+        <input type="text" ng-model="newContact.address" required><br>
+        <label>Phone Number:</label>
+        <input type="text" ng-model="newContact.phoneNumber" required><br>
+        <button type="submit">Save</button>
+    </form>
+</div>
+
+<!-- Update contact form -->
+<!-- Update contact form -->
+<div ng-show="showUpdateContactForm">
+    <h3>Update Existing Contact:</h3>
+    <form ng-submit="updateExistingContact()">
+        <label>Contact ID:</label>
+        <input type="text" ng-model="existingContact.id" required><br>
+        <label>Name:</label>
+        <input type="text" ng-model="existingContact.name" required><br>
+        <label>Address:</label>
+        <input type="text" ng-model="existingContact.address" required><br>
+        <label>Phone Number:</label>
+        <input type="text" ng-model="existingContact.phoneNumber" required><br>
+        <button type="submit">Update</button>
+    </form>
+</div>
+
+
+<!-- Delete contact form -->
+<div ng-show="showDeleteContactForm">
+    <h3>Delete Contact:</h3>
+    <!-- Use ng-submit to trigger deleteContactById() when form is submitted -->
+    <form ng-submit="deleteContactById()">
+        <label>Contact ID:</label>
+        <!-- Bind input field to contactIdToDelete -->
+        <input type="text" ng-model="contactIdToDelete" required><br>
+        <button type="submit">Delete</button>
+    </form>
+</div>
+
+<!-- View user by name section -->
+<div ng-show="viewByName">
+    <h3>View User by Name:</h3>
+    <form ng-submit="viewUserByName()">
+        <label>Username:</label>
+        <input type="text" ng-model="userIdToView" required><br>
+        <button type="submit">View User</button>
+    </form>
+    <!-- Display user details here -->
+</div>
+
+<!-- View single contact section -->
+<div ng-show="showViewContactTable">
+    <h3>Contact Details:</h3>
+    <table border="1">
+        <tr>
+            <th>Name</th>
+            <th>Address</th>
+            <th>Phone Number</th>
+        </tr>
+        <tr>
+            <td>{{ contact.name }}</td>
+            <td>{{ contact.address }}</td>
+            <td>{{ contact.phoneNumber }}</td>
+        </tr>
+    </table>
+</div>
+
+<!-- View all system users section -->
+<div ng-show="showSystemUsersTable">
+    <h3>All System Users:</h3>
+    <table border="1">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Username</th>
+            <th>Role</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="user in systemUsers">
+            <td>{{ user.id }}</td>
+            <td>{{ user.username }}</td>
+            <td>{{ user.role }}</td>
+        </tr>
+        </tbody>
+    </table>
+    <p ng-show="showNoSystemUsersMessage">No system users found.</p>
+</div>
+
+
+
+<!-- View all contacts section -->
+<div ng-show="showAllContactsTable">
+    <h3>All Contacts:</h3>
+    <table border="1">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Address</th>
+            <th>Phone Number</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="contact in contacts">
+            <td>{{ contact.id }}</td>
+            <td>{{ contact.name }}</td>
+            <td>{{ contact.address }}</td>
+            <td>{{ contact.phoneNumber }}</td>
+        </tr>
+        </tbody>
+    </table>
+    <p ng-show="contacts.length === 0">No contacts found.</p>
+</div>
+
+
+
+
+
+<script src="/lib/angular.min.js"></script>
+<script>
+    var app = angular.module('ContactApplication', [])
+    app.controller('PersonController', function($scope, $http) {
+        $scope.loggedIn = false;
+        $scope.isAdmin = false;
+        $scope.credentials = {};
+        $scope.newUser = {};
+        $scope.newContact = {};
+        $scope.existingContact = {};
+        $scope.adminOption = '';
+        $scope.viewByName = false;
+        $scope.userIdToView = '';
+        $scope.viewContact = false;
+        $scope.contact = {};
+        $scope.viewAllContacts = false;
+        $scope.contacts = [];
+        $scope.showAllContactsLabel = false;
+        $scope.showViewContactTable = false;
+        $scope.showAllContactsTable = false;
+        $scope.showSystemUsersTable = false;
+        $scope.systemUsers = [];
+        $scope.showNoSystemUsersMessage = false;
+        $scope.showAddUserForm = false; // flag to show/hide add user form
+        $scope.showAddContactForm = false; // flag to show/hide add contact form
+        $scope.showUpdateContactForm = false; // flag to show/hide update contact form
+        $scope.showDeleteContactForm = false; // flag to show/hide delete contact form
+
+        $scope.login = function() {
+            $http.post("/login", $scope.credentials).then(function(resp){
+                console.log(resp.data);
+                $scope.loggedIn = true;
+                $scope.isAdmin = resp.data.role === 'ADMIN';
+                $scope.username = resp.data.username;
+            }).catch(function(error){
+                console.error('Login failed:', error);
+                alert('Login failed. Please check your credentials.');
+            });
+        };
+
+$scope.systemUsers = [];
+
+$scope.viewAllSystemUsers = function() {
+    $http.get("http://localhost:8080/persons").then(function(response){
+        console.log('Fetched system users:', response.data);
+        $scope.systemUsers = response.data.content; // Assigning the content array to systemUsers
+        $scope.showSystemUsersTable = true;
+        $scope.showNoSystemUsersMessage = $scope.systemUsers.length === 0;
+        $scope.showAllContactsTable = false;
+        $scope.showViewContactTable = false;
+    }).catch(function(error){
+        console.error('Failed to fetch system users:', error);
+        alert('Failed to fetch system users. Please try again.');
+    });
+};
+
+
+        $scope.viewAllContacts = function() {
+            $http.get("http://localhost:8080/contacts").then(function(response){
+                console.log('Fetched contacts:', response.data);
+                $scope.contacts = response.data.content; // Assigning the content array to contacts
+                $scope.showAllContactsTable = true;
+                $scope.showNoContactsMessage = $scope.contacts.length === 0;
+                $scope.showViewContactTable = false;
+                $scope.showSystemUsersTable = false;
+            }).catch(function(error){
+                console.error('Failed to fetch contacts:', error);
+                alert('Failed to fetch contacts. Please try again.');
+            });
+        };
+
+
+        $scope.viewContactById = function() {
+            $http.get("/contacts/" + $scope.contactId).then(function(response){
+                console.log('Fetched contact:', response.data);
+                $scope.contact = response.data;
+                $scope.showViewContactTable = true;
+                $scope.showAllContactsTable = false;
+                $scope.showSystemUsersTable = false;
+            }).catch(function(error){
+                console.error('Failed to fetch contact:', error);
+                alert('Failed to fetch contact. Please try again.');
+            });
+        };
+
+        $scope.addNewUser = function() {
+            $http.post("http://localhost:8080/persons", $scope.newUser).then(function(response){
+                console.log('New user added:', response.data);
+                // Optionally, you can update the list of system users after adding the new user
+                $scope.viewAllSystemUsers();
+                alert('New user added successfully.');
+                $scope.showAddUserForm = false; // hide the add user form after successful addition
+                $scope.newUser = {}; // reset the newUser object
+            }).catch(function(error){
+                console.error('Failed to add new user:', error);
+                alert('Failed to add new user. Please try again.');
+            });
+        };
+
+        $scope.addNewContact = function() {
+            $http.post("http://localhost:8080/contacts", $scope.newContact).then(function(response){
+                console.log('New contact added:', response.data);
+                // Optionally, you can update the list of contacts after adding the new contact
+                $scope.viewAllContacts();
+                alert('New contact added successfully.');
+                $scope.showAddContactForm = false; // hide the add contact form after successful addition
+                $scope.newContact = {}; // reset the newContact object
+            }).catch(function(error){
+                console.error('Failed to add new contact:', error);
+                alert('Failed to add new contact. Please try again.');
+            });
+        };
+
+        $scope.updateExistingContact = function() {
+            $http.post("http://localhost:8080/contacts/update", $scope.existingContact).then(function(response){
+                console.log('Contact updated:', response.data);
+                // Optionally, you can update the list of contacts after updating the contact
+                $scope.viewAllContacts(); // Update the list of contacts after updating
+                alert('Contact updated successfully.');
+                $scope.showUpdateContactForm = false;
+                $scope.existingContact = {};
+            }).catch(function(error){
+                console.error('Failed to update contact:', error);
+                alert('Failed to update contact. Please try again.');
+            });
+        };
+
+        $scope.deleteContactById = function() {
+            $http.delete("http://localhost:8080/contacts/" + $scope.contactIdToDelete).then(function(response){
+                console.log('Deleting contact:', response.data);
+                // Optionally handle success response if needed
+                alert('Contact deleted successfully.');
+                // Reset input field and hide delete form
+                $scope.contactIdToDelete = '';
+                $scope.showDeleteContactForm = false;
+            }).catch(function(error){
+                console.error('Failed to delete contact:', error);
+                alert('Failed to delete contact. Please try again.');
+            });
+        };
+
+
+        $scope.logout = function() {
+            $scope.loggedIn = false;
+            $scope.isAdmin = false;
+            $scope.credentials = {};
+            $scope.newUser = {};
+            $scope.newContact = {};
+            $scope.existingContact = {};
+            $scope.adminOption = '';
+            $scope.viewByName = false;
+            $scope.userIdToView = '';
+            $scope.viewContact = false;
+            $scope.contact = {};
+            $scope.viewAllContacts = false;
+            $scope.contacts = [];
+            $scope.showAllContactsLabel = false;
+            $scope.showViewContactTable = false;
+            $scope.showAllContactsTable = false;
+            $scope.showSystemUsersTable = false;
+            $scope.systemUsers = [];
+            $scope.showNoSystemUsersMessage = false;
+            $scope.showAddUserForm = false; // hide the add user form on logout
+            $scope.showAddContactForm = false; // hide the add contact form on logout
+            $scope.showUpdateContactForm = false; // hide the update contact form on logout
+            $scope.showDeleteContactForm = false; // hide the delete contact form on logout
+        };
+    });
+</script>
+
+</body>
+</html>
